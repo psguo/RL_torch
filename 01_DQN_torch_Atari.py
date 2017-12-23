@@ -1,3 +1,5 @@
+# Incomplete
+
 import numpy as np 
 import torch
 import torch.nn as nn
@@ -90,7 +92,7 @@ class DQN:
         self.optimizer.step()
 
 
-env = gym.make('CartPole-v0')
+env = gym.make('SpaceInvaders-v0')
 env = env.unwrapped
 
 dqn = DQN(mem_size=2000, batch_size=32, n_features=env.observation_space.shape[0], n_actions=env.action_space.n, gamma=0.9, replace_counter=100, learning_rate = 0.01, epsilon = 0.9)
