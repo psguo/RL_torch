@@ -4,17 +4,26 @@ import torch.nn as nn
 from torch.autograd import Variable
 import gym
 
+# class Net(nn.Module):
+#     def __init__(self, input_size, n_l1, num_classes):
+#         super(Net, self).__init__()
+#         self.fc1 = nn.Linear(input_size, n_l1)
+#         self.relu = nn.ReLU()
+#         self.fc2 = nn.Linear(n_l1, num_classes)
+#
+#     def forward(self, x):
+#         out = self.fc1(x)
+#         out = self.relu(out)
+#         out = self.fc2(out)
+#         return out
+
 class Net(nn.Module):
     def __init__(self, input_size, n_l1, num_classes):
         super(Net, self).__init__()
-        self.fc1 = nn.Linear(input_size, n_l1)
-        self.relu = nn.ReLU()
-        self.fc2 = nn.Linear(n_l1, num_classes)
+        self.fc2 = nn.Linear(input_size, num_classes)
 
     def forward(self, x):
-        out = self.fc1(x)
-        out = self.relu(out)
-        out = self.fc2(out)
+        out = self.fc2(x)
         return out
 
 class DQN:
@@ -59,17 +68,20 @@ class DQN:
 
         return action
 
-    def learn(self):
+    def learn(self, is_online = False):
         # 0. replace target net
         if self.learn_counter % self.replace_counter == 0:
             self.target_net.load_state_dict(self.eval_net.state_dict())
         self.learn_counter += 1
 
         # 1. sampled mem into batch
-        sample_size = min(self.mem_counter, self.mem_size)
-        sample_index = np.random.choice(sample_size, size=self.batch_size)
-        batch_mem = self.mem[sample_index, :]
-
+        if not is_online:
+            sample_size = min(self.mem_counter, self.mem_size)
+            sample_index = np.random.choice(sample_size, size=self.batch_size)
+            batch_mem = self.mem[sample_index, :]
+        else:
+            index = self.mem_counter % self.mem_size
+            batch_mem = self.mem[index, :].reshape(1,-1)
         # 2. Separate variables
         s = Variable(torch.FloatTensor(batch_mem[:, :self.n_features]))
         a = Variable(torch.LongTensor(batch_mem[:, self.n_features:self.n_features+1]))
@@ -102,7 +114,7 @@ for episode in range(1000):
     total_r = 0
 
     while True:
-        if episode > 900:
+        if episode > 200:
             env.render()
 
         action = dqn.choose_action(observation)
@@ -120,7 +132,7 @@ for episode in range(1000):
 
         # if dqn.mem_counter > MEMORY_CAPACITY
         if dqn.mem_counter > dqn.mem_size:
-            dqn.learn()
+            dqn.learn(is_online=True)
             if done:
                 print('Ep: ', episode, '| Ep_r: ', round(total_r, 2))
 
